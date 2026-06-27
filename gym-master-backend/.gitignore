@@ -1,0 +1,13 @@
+# IGNORE TEST PYTHON FILE
+tests/verify_connection.py
+
+# IGNORE TEST JS FILE
+tests/test-db.js
+tests/test-jwt.js
+
+# TESTED API STUFF
+test.html
+test-server.js
+
+# IGNORE 
+.env
