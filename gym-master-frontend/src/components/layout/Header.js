@@ -69,7 +69,7 @@ const Header = () => {
       <div className="container header">
         <Link className="navbar-brand text-danger fw-bold fs-4" to="/">
           <i className="fas fa-dumbbell me-2"></i>
-          Gym Master
+          GoFit
         </Link>
         <button
           className="navbar-toggler"

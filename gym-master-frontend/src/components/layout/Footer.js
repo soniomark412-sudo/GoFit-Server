@@ -9,7 +9,7 @@ const Footer = () => {
   return (
     <footer className="bg-white text-secondary text-center footer">
       <div className="container">
-        <p className="mb-2">Gym Master &copy; {new Date().getFullYear()}</p>
+        <p className="mb-2">GoFit &copy; {new Date().getFullYear()}</p>
       </div>
     </footer>
   );

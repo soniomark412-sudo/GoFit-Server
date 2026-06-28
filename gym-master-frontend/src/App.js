@@ -47,7 +47,7 @@ const Home = () => {
         <div className="col-md-7">
           <h1 className="display-1 text-white fw-bold">Track Your Fitness Journey</h1>
           <p className="lead display-6 text-white">
-            Welcome to Gym Master, your personal AI-powered fitness companion.
+            Welcome to GoFit, your personal AI-powered fitness companion.
           </p>
           <div className="d-grid gap-2 d-md-flex pt-4 justify-content-md-end px-3">
             <Link to="/register" className="btn btn-light btn-outline-danger btn-lg me-md-2">Get Started</Link>
