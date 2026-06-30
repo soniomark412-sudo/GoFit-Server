@@ -11,39 +11,64 @@ import pandas as pd
 import base64
 from joblib import load
 from datetime import timedelta
-import pymongo  # <-- ADDED
+import pymongo
 
-# Load environment variables from .env file
-load_dotenv()
-print("MONGODB_URI:", os.getenv("MONGODB_URI"))
-print("JWT_SECRET_KEY:", os.getenv("JWT_SECRET_KEY"))
+# ==============================================
+# 🔧 ENVIRONMENT VARIABLES (Works with or without .env)
+# ==============================================
+
+# Try to load .env file (for local development)
+# If .env doesn't exist (on Render), it silently continues
+load_dotenv(override=True)  # override=True ensures environment variables take precedence
+
+# Get environment variables (from .env locally OR from Render's Environment section)
+MONGODB_URI = os.getenv("MONGODB_URI")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+
+print("🔍 Environment check:")
+print(f"  - MONGODB_URI: {'✅ Set' if MONGODB_URI else '❌ NOT SET'}")
+print(f"  - JWT_SECRET_KEY: {'✅ Set' if JWT_SECRET_KEY else '❌ NOT SET'}")
+
+# ==============================================
+# 🚀 FLASK APP INITIALIZATION
+# ==============================================
 
 app = Flask(__name__)
 
 # Configuration
-app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
+app.config["JWT_SECRET_KEY"] = JWT_SECRET_KEY
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=30)
 
 # ==============================================
 # 🔗 DATABASE CONNECTION (Raw PyMongo)
 # ==============================================
-try:
-    mongo_client = pymongo.MongoClient(os.getenv("MONGODB_URI"), serverSelectionTimeoutMS=5000)
-    # Force connection
-    mongo_client.admin.command('ping')
-    print("✅ MongoDB connected successfully!")
-    db = mongo_client.get_database("gofit")  # Your database name
-except Exception as e:
-    print(f"❌ MongoDB connection failed: {e}")
-    import traceback
-    traceback.print_exc()
-    db = None
+
+db = None  # Initialize db variable
+
+if MONGODB_URI:
+    try:
+        mongo_client = pymongo.MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
+        # Force connection
+        mongo_client.admin.command('ping')
+        print("✅ MongoDB connected successfully!")
+        db = mongo_client.get_database("gofit")  # Your database name
+    except Exception as e:
+        print(f"❌ MongoDB connection failed: {e}")
+        import traceback
+        traceback.print_exc()
+        db = None
+else:
+    print("❌ MONGODB_URI not set. Database will not be available.")
 
 # Initialize extensions
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
 CORS(app)  # Allow cross-origin requests
+
+# ==============================================
+# 🧠 MEDIAPIPE POSE DETECTION
+# ==============================================
 
 # Initialize MediaPipe Pose
 mp_drawing = mp.solutions.drawing_utils
@@ -96,7 +121,7 @@ def calculate_angle(a, b, c):
 def register():
     """Register a new user"""
     if db is None:
-        return jsonify({'error': 'Database connection failed'}), 500
+        return jsonify({'error': 'Database connection failed. Please try again later.'}), 500
 
     data = request.get_json()
     username = data.get('username')
@@ -131,7 +156,7 @@ def register():
 def login():
     """Login user with username and password"""
     if db is None:
-        return jsonify({'error': 'Database connection failed'}), 500
+        return jsonify({'error': 'Database connection failed. Please try again later.'}), 500
 
     data = request.get_json()
     username = data.get('username')
