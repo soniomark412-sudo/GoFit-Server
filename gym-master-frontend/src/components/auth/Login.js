@@ -5,15 +5,15 @@ import React, { useState, useContext } from 'react'; // Import the useState and 
 import { Link, useNavigate } from 'react-router-dom'; // Import the Link and useNavigate components
 import { AuthContext } from '../../context/AuthContext'; // Import the AuthContext
 
-const Login = () => { 
+const Login = () => {
   const [formData, setFormData] = useState({ // Create a state variable called formData and a function to update it called setFormData
-    email: '', 
+    username: '',  // CHANGED: from 'email' to 'username'
     password: ''
   });
-  const { login, error } = useContext(AuthContext); 
-  const navigate = useNavigate(); 
+  const { login, error } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  const { email, password } = formData; 
+  const { username, password } = formData;  // CHANGED: from 'email' to 'username'
 
   const onChange = e => { // The onChange function updates the formData state variable when the user types in the form fields.
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -21,12 +21,12 @@ const Login = () => {
 
   const onSubmit = async e => { // The onSubmit function is called when the user submits the form.
     e.preventDefault();
-    
+
     const success = await login({
-      email,
+      username,  // CHANGED: from 'email' to 'username'
       password
     });
-    
+
     if (success) { // If the login is successful, the user is redirected to the dashboard page.
       navigate('/dashboard');
     }
@@ -44,13 +44,13 @@ const Login = () => {
               )}
               <form onSubmit={onSubmit}>
                 <div className="mb-3">
-                  <label htmlFor="email" className="form-label">Email Address</label>
+                  <label htmlFor="username" className="form-label">Username</label>  {/* CHANGED: from 'Email Address' to 'Username' */}
                   <input
-                    type="email"
+                    type="text"  // CHANGED: from 'email' to 'text'
                     className="form-control"
-                    id="email"
-                    name="email"
-                    value={email}
+                    id="username"  // CHANGED: from 'email' to 'username'
+                    name="username"  // CHANGED: from 'email' to 'username'
+                    value={username}
                     onChange={onChange}
                     required
                   />

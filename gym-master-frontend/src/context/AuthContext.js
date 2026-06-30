@@ -1,5 +1,5 @@
-// This file is responsible for the authentication context. 
-// It provides the context to the children components and contains the logic 
+// This file is responsible for the authentication context.
+// It provides the context to the children components and contains the logic
 // for registering, logging in, logging out, and updating the user profile.
 
 import React, { createContext, useState, useEffect } from 'react';
@@ -9,58 +9,57 @@ import { setAuthToken, getAuthToken, removeAuthToken } from '../utils/authToken'
 // Create context
 export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => { // AuthProvieder goal is to provide the context to the children components
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Check if user is already logged in (on app load)
-  useEffect(() => { 
+  useEffect(() => {
     const loadUser = async () => {
       const token = getAuthToken();
-      
-      if (!token) { 
-        setLoading(false); // if there is no token, we are not loading anymore
+
+      if (!token) {
+        setLoading(false);
         return;
       }
 
-      setAuthToken(token); // if there is a token, we set it to the header
-      
+      setAuthToken(token);
+
       try {
         const res = await api.get('/users/profile');
-        
+
         if (res.data.success !== false) {
           setUser(res.data.data || res.data);
-          setIsAuthenticated(true); // if the user is logged in, we set isAuthenticated to true
+          setIsAuthenticated(true);
         }
-      } catch (err) { 
+      } catch (err) {
         console.error('Error loading user:', err);
         removeAuthToken();
       }
-      
-      setLoading(false); 
+
+      setLoading(false);
     };
 
-    loadUser(); // loadUser is called so we can check if the user is already logged in
+    loadUser();
   }, []);
 
   // Register user
   const register = async (formData) => {
     try {
       setError(null);
-      console.log('Starting registration process for:', formData); 
-      
-      const res = await api.post('/auth/register', formData); // we send the data to the server
+      console.log('Starting registration process for:', formData);
+
+      const res = await api.post('/auth/register', formData);
       console.log('Registration response received:', res.data);
-      
-      // Check for error response
+
       if (res.data.success === false) {
-        console.log('Server indicated registration failed:', res.data.message); // if the server returns an error, we log it
+        console.log('Server indicated registration failed:', res.data.message);
         setError(res.data.message);
         return false;
       }
-      
+
       // Check for token in different possible response formats
       if (res.data.data && res.data.data.token) {
         console.log('Token found in res.data.data');
@@ -75,7 +74,7 @@ export const AuthProvider = ({ children }) => { // AuthProvieder goal is to prov
         setIsAuthenticated(true);
         return true;
       }
-      
+
       console.log('No token found in response - this is a problem');
       return false;
     } catch (err) {
@@ -85,32 +84,38 @@ export const AuthProvider = ({ children }) => { // AuthProvieder goal is to prov
     }
   };
 
-  // Login user
+  // Login user - FIXED
   const login = async (formData) => {
     try {
       setError(null);
-      const res = await api.post('/auth/login', formData); // we send the data to the "MongoDB" server
-      
+      console.log('Login form data:', formData);
+
+      const res = await api.post('/auth/login', formData);
+      console.log('Login response:', res.data);
+
+      // Check for error
       if (res.data.success === false) {
         setError(res.data.message);
         return false;
       }
-      
-      if (res.data.data && res.data.data.token) {
-        setAuthToken(res.data.data.token);
-        setUser(res.data.data);
-        setIsAuthenticated(true);
-        return true;
-      } else if (res.data.token) {
-        setAuthToken(res.data.token);
-        setUser(res.data);
+
+      // IMPORTANT: Your backend returns "access_token" (not "token")
+      const token = res.data.access_token;
+      const userData = res.data.user;
+
+      if (token) {
+        console.log('Token found:', token.substring(0, 20) + '...');
+        setAuthToken(token);
+        setUser(userData);
         setIsAuthenticated(true);
         return true;
       }
-      
+
+      console.log('No token found in response');
       return false;
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      console.error('Login error:', err);
+      setError(err.response?.data?.message || err.response?.data?.error || 'Login failed');
       return false;
     }
   };
@@ -127,17 +132,17 @@ export const AuthProvider = ({ children }) => { // AuthProvieder goal is to prov
     try {
       setError(null);
       const res = await api.put('/users/profile', profileData);
-      
+
       if (res.data.success === false) {
         setError(res.data.message);
         return false;
       }
-      
+
       setUser(prev => ({
         ...prev,
         ...res.data.data || res.data
       }));
-      
+
       return true;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update profile');
