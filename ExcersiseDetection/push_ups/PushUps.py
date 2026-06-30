@@ -14,20 +14,22 @@ from datetime import timedelta
 import pymongo
 
 # ==============================================
-# 🔧 ENVIRONMENT VARIABLES (Works with or without .env)
+# 🔧 ENVIRONMENT VARIABLES (Works locally & on Render)
 # ==============================================
 
-# Try to load .env file (for local development)
-# If .env doesn't exist (on Render), it silently continues
-load_dotenv(override=True)  # override=True ensures environment variables take precedence
+# Load .env file ONLY if it exists (local development)
+# Render uses Environment Variables from the dashboard
+load_dotenv(override=True)
 
-# Get environment variables (from .env locally OR from Render's Environment section)
+# Get environment variables
 MONGODB_URI = os.getenv("MONGODB_URI")
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
-print("🔍 Environment check:")
-print(f"  - MONGODB_URI: {'✅ Set' if MONGODB_URI else '❌ NOT SET'}")
-print(f"  - JWT_SECRET_KEY: {'✅ Set' if JWT_SECRET_KEY else '❌ NOT SET'}")
+print("=" * 50)
+print("🔍 ENVIRONMENT CHECK:")
+print(f"  - MONGODB_URI: {'✅ SET' if MONGODB_URI else '❌ NOT SET'}")
+print(f"  - JWT_SECRET_KEY: {'✅ SET' if JWT_SECRET_KEY else '❌ NOT SET'}")
+print("=" * 50)
 
 # ==============================================
 # 🚀 FLASK APP INITIALIZATION
@@ -43,53 +45,46 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=30)
 # 🔗 DATABASE CONNECTION (Raw PyMongo)
 # ==============================================
 
-db = None  # Initialize db variable
+db = None
 
 if MONGODB_URI:
     try:
         mongo_client = pymongo.MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
-        # Force connection
         mongo_client.admin.command('ping')
         print("✅ MongoDB connected successfully!")
-        db = mongo_client.get_database("gofit")  # Your database name
+        db = mongo_client.get_database("gofit")
     except Exception as e:
         print(f"❌ MongoDB connection failed: {e}")
-        import traceback
-        traceback.print_exc()
         db = None
 else:
-    print("❌ MONGODB_URI not set. Database will not be available.")
+    print("❌ MONGODB_URI not set. Database unavailable.")
 
 # Initialize extensions
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
-CORS(app)  # Allow cross-origin requests
+CORS(app)
 
 # ==============================================
 # 🧠 MEDIAPIPE POSE DETECTION
 # ==============================================
 
-# Initialize MediaPipe Pose
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
-# Path to model files
 MODEL_FILE = "pushup_model.joblib"
 ENCODER_FILE = "label_encoder.joblib"
 
-# Load model and label encoder
 try:
     model = load(MODEL_FILE)
     label_encoder = load(ENCODER_FILE)
-    print("Model loaded successfully!")
-    print(f"Classes: {label_encoder.classes_}")
+    print("✅ Model loaded successfully!")
+    print(f"   Classes: {label_encoder.classes_}")
 except Exception as e:
-    print(f"Error loading model: {e}")
+    print(f"❌ Error loading model: {e}")
     model = None
     label_encoder = None
 
-# Initialize pose detector
 pose = mp_pose.Pose(
     min_detection_confidence=0.7,
     min_tracking_confidence=0.7,
@@ -121,7 +116,7 @@ def calculate_angle(a, b, c):
 def register():
     """Register a new user"""
     if db is None:
-        return jsonify({'error': 'Database connection failed. Please try again later.'}), 500
+        return jsonify({'error': 'Database connection failed'}), 500
 
     data = request.get_json()
     username = data.get('username')
@@ -131,14 +126,11 @@ def register():
     if not username or not password:
         return jsonify({'error': 'Username and password are required'}), 400
 
-    # Check if user already exists
     if db.users.find_one({'username': username}):
         return jsonify({'error': 'Username already exists'}), 400
 
-    # Hash the password
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-    # Insert user into database
     user_id = db.users.insert_one({
         'username': username,
         'password': hashed_password,
@@ -156,7 +148,7 @@ def register():
 def login():
     """Login user with username and password"""
     if db is None:
-        return jsonify({'error': 'Database connection failed. Please try again later.'}), 500
+        return jsonify({'error': 'Database connection failed'}), 500
 
     data = request.get_json()
     username = data.get('username')
@@ -217,7 +209,8 @@ def health_check():
     return jsonify({
         'status': 'ok',
         'model_loaded': model is not None,
-        'classes': label_encoder.classes_.tolist() if label_encoder else None
+        'classes': label_encoder.classes_.tolist() if label_encoder else None,
+        'db_connected': db is not None
     })
 
 
