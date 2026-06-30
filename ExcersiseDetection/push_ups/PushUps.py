@@ -12,16 +12,14 @@ import base64
 from joblib import load
 from datetime import timedelta
 import pymongo
+import sys
 
 # ==============================================
 # 🔧 ENVIRONMENT VARIABLES (Works locally & on Render)
 # ==============================================
 
-# Load .env file ONLY if it exists (local development)
-# Render uses Environment Variables from the dashboard
 load_dotenv(override=True)
 
-# Get environment variables
 MONGODB_URI = os.getenv("MONGODB_URI")
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
@@ -37,7 +35,6 @@ print("=" * 50)
 
 app = Flask(__name__)
 
-# Configuration
 app.config["JWT_SECRET_KEY"] = JWT_SECRET_KEY
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=30)
 
@@ -72,8 +69,10 @@ CORS(app)
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
-MODEL_FILE = "pushup_model.joblib"
-ENCODER_FILE = "label_encoder.joblib"
+# Fix model paths using absolute path relative to this file
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_FILE = os.path.join(BASE_DIR, "pushup_model.joblib")
+ENCODER_FILE = os.path.join(BASE_DIR, "label_encoder.joblib")
 
 try:
     model = load(MODEL_FILE)
@@ -118,7 +117,18 @@ def register():
     if db is None:
         return jsonify({'error': 'Database connection failed'}), 500
 
-    data = request.get_json()
+    # --- DEBUG: Print raw request data ---
+    raw_data = request.get_data(as_text=True)
+    print("🔍 Raw request data:", raw_data)
+    # --- END DEBUG ---
+
+    try:
+        data = request.get_json(force=True)
+        print("✅ Parsed JSON:", data)
+    except Exception as e:
+        print(f"❌ JSON parse error: {e}")
+        return jsonify({'error': f'Invalid JSON: {str(e)}'}), 400
+
     username = data.get('username')
     password = data.get('password')
     email = data.get('email')
@@ -150,7 +160,11 @@ def login():
     if db is None:
         return jsonify({'error': 'Database connection failed'}), 500
 
-    data = request.get_json()
+    try:
+        data = request.get_json(force=True)
+    except Exception as e:
+        return jsonify({'error': f'Invalid JSON: {str(e)}'}), 400
+
     username = data.get('username')
     password = data.get('password')
 
