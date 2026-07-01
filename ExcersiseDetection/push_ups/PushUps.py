@@ -15,6 +15,14 @@ import pymongo
 import sys
 
 # ==============================================
+# 🧠 MEMORY OPTIMIZATION (MUST BE AT THE TOP)
+# ==============================================
+
+# Limit CPU threads to reduce memory usage
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # Reduce TensorFlow logs
+
+# ==============================================
 # 🔧 ENVIRONMENT VARIABLES (Works locally & on Render)
 # ==============================================
 
@@ -63,7 +71,7 @@ jwt = JWTManager(app)
 CORS(app)
 
 # ==============================================
-# 🧠 MEDIAPIPE POSE DETECTION
+# 🧠 MEDIAPIPE POSE DETECTION (MEMORY OPTIMIZED)
 # ==============================================
 
 mp_drawing = mp.solutions.drawing_utils
@@ -84,10 +92,12 @@ except Exception as e:
     model = None
     label_encoder = None
 
+# Lighter MediaPipe model (model_complexity=0 = Lite)
 pose = mp_pose.Pose(
-    min_detection_confidence=0.7,
-    min_tracking_confidence=0.7,
-    static_image_mode=False
+    min_detection_confidence=0.5,   # Lower from 0.7
+    min_tracking_confidence=0.5,    # Lower from 0.7
+    static_image_mode=False,
+    model_complexity=0               # 0 = Lite (reduces memory usage)
 )
 
 
@@ -358,4 +368,5 @@ def record_exercise():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5002, debug=True)
+    # debug=False to reduce memory usage (no double loading)
+    app.run(host='0.0.0.0', port=5002, debug=False)
