@@ -2,7 +2,7 @@
 // This page allows users to login to their account
 
 import React, { useState, useContext } from 'react'; // Import the useState and useContext hooks
-import { Link, useNavigate } from 'react-router-dom'; // Import the Link and useNavigate components
+import { Link, useNavigate, useLocation } from 'react-router-dom'; // Import Link, useNavigate, and useLocation
 import { AuthContext } from '../../context/AuthContext'; // Import the AuthContext
 
 const Login = () => {
@@ -12,6 +12,7 @@ const Login = () => {
   });
   const { login, error } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation(); // <-- Added to detect registration state
 
   const { username, password } = formData;  // CHANGED: from 'email' to 'username'
 
@@ -39,6 +40,13 @@ const Login = () => {
         <h2 className="text-center display-4 fw-bold pb-2">LOGIN</h2>
           <div className="card">
             <div className="card-body">
+              {/* ✅ Show success message if user just registered */}
+              {location.state?.registered && (
+                <div className="alert alert-success">
+                  ✅ Registration successful! Please log in.
+                </div>
+              )}
+              {/* Show error message if login fails */}
               {error && (
                 <div className="alert alert-danger">{error}</div>
               )}

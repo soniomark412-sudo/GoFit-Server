@@ -50,7 +50,7 @@ const Register = () => {
     
     if (success) {
       console.log('Registration successful, navigating to dashboard');
-      navigate('/dashboard');
+      navigate('/login', { state: { registered: true } });
     } else {
       console.log('Registration failed, staying on registration page');
     }
